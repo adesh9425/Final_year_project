@@ -1,0 +1,85 @@
+   <!DOCTYPE html>
+<html>
+<head>
+    <title>Statistics</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <style type="text/css">
+        .container {
+            margin-top: 50px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <h1 class="navbar-brand"><b><big>Health Monitoring System</big></b></h1>
+        </div>
+        <div class="container" align="center">
+          <div class="row">
+            </br>
+            <a href="/archive/" class="btn btn-warning" align="center">Archive</a>
+            <a href="/pdetails/" class="btn btn-warning" align="center">Settings</a>
+            <a href="/logout/" class="btn btn-warning" align="center">Logout</a>    
+
+          </div>
+        </div>
+      </div>
+    </nav>
+
+ <div class="container">
+    <form action="/send_email/" method="POST" class="pull-right">
+        <div class="form-group">
+            <label for="name">Email:</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Email</button>
+    </form>
+
+    <h1 class="pull-left">Statistics</h1>
+
+    <div class="chart-container">
+        {% if img_src %}
+            <img src="{{ img_src }}" alt="chart">
+        {% else %}
+            <p>No chart available.</p>
+        {% endif %}
+    </div>
+
+    <form action="/process/" method="POST">
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+            <label for="chart-type">Chart Type:</label>
+            <select class="form-control" id="chart-type" name="chart-type">
+                <option value="line">Line Chart</option>
+                <option value="pi">Pie Chart</option>
+                <option value="hist">Hist Chart</option>
+                <option value="box">Box Chart</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Chart</button>
+    </form>
+</div>
+
+
+
+</body>
+</html>
