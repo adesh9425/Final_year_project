@@ -14,18 +14,20 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.shortcuts import redirect
 from django.urls import include, path
 from django.contrib import admin
 from rest_framework import routers
 from health import views
-
+from django.conf import settings
+from django.conf.urls.static import static
 admin.autodiscover()
 
 router = routers.DefaultRouter()
 router.register(r'health', views.HealthViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('admin/', admin.site.urls),
     path('login/', views.login),
@@ -39,5 +41,6 @@ urlpatterns = [
     path('archive/', views.archive),
     path('process/',views.generate_chart),
     path('send_email/',views.send_email),
+path('', lambda request: redirect('login/', permanent=True)),
     
 ]

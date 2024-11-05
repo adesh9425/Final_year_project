@@ -1,4 +1,4 @@
-
+import matplotlib
 # Create your views here.
 from django.shortcuts import render
 from django.views.decorators.cache import cache_control
@@ -37,7 +37,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from .models import Health, User
 import seaborn as sns
-
+matplotlib.use('Agg')
 # Create your views here.
 
 
@@ -119,79 +119,72 @@ def generate_chart(request):
         # Get the form data
         name = request.POST['name']
         chart_type = request.POST['chart-type']
-        user = User.objects.filter(name=name).all()
-        for i in user:
-            health = Health.objects.filter(name_id=i.id).all()
-        time,temp,pulse=[],[],[]
-        for i in health:
-            time.append(i.timestamp)
-            temp.append(i.temperature)
-            pulse.append(i.pulse)
-        # Generate the chart
-        fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-        if chart_type=='pi':
-            sns.set_style('whitegrid')
-            fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True)
-        # Plot temperature vs time in the first subplot
-        if chart_type=='line':
-            sns.lineplot(x=time, y=temp,ax=ax1,color='red')
-            sns.scatterplot(x=time, y=temp,ax=ax1)
-        elif chart_type=='pi':
-            
-            a=[i for i in temp if i>98 ]
-            c=[i for i in temp if i==98]
-            b=[i for i in temp if i<98 ]
-            sizes=[len(a),len(b),len(c)]
-            ax1.pie(sizes,labels=['high','ok','low'],colors=['red','green','yellow'] ,autopct='%1.1f%%')
-        elif chart_type=='hist':
-            
-            # plot temperature histogram
-            sns.histplot( data=temp, color='blue', bins=5, ax=ax1)
-            
-            
+        user = User.objects.filter(name=name).first()
 
-        elif chart_type=='box':
-            sns.boxplot(x=temp, palette='Set3',ax=ax1)
-            
-        ax1.set_ylabel('Temperature (°C)')
+        if user:
+            health = Health.objects.filter(name_id=user.id)
+            time, temp, pulse = [], [], []
 
-        # Plot pulse vs time in the second subplot
-        if chart_type=='line':
-            sns.lineplot(x=time, y=pulse,ax=ax2,color='blue')
-            sns.scatterplot(x=time, y=pulse,ax=ax2,color='red')
-        elif chart_type=='pi':
-            a=[i for i in pulse if i>72 ]
-            c=[i for i in pulse if i==72]
-            b=[i for i in pulse if i<72 ]
-            sizes=[len(a),len(b),len(c)]
-            ax2.pie(sizes,labels=['high','ok','low'],colors=['red','green','yellow'],autopct='%1.1f%%' )
-        elif chart_type=='hist':
-            sns.histplot( data=pulse, color='red', bins=5, ax=ax2)
-        elif chart_type=='box':
-            sns.boxplot( x=pulse, palette='Set3',ax=ax2)
-            
-        if chart_type=='line':
-            ax2.set_xlabel('Time (s)')
-        ax2.set_ylabel('Pulse (bpm)')
+            for record in health:
+                time.append(record.timestamp)
+                temp.append(record.temperature)
+                pulse.append(record.pulse)
 
-        # Add a title to the figure
-        fig.suptitle('Temperature and Pulse vs Time')
-        
-        # Save the chart to a buffer
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format='png')
-        buffer.seek(0)
-        
-        # Convert the buffer to an image for rendering in HTML
-        image_png = buffer.getvalue()
-        buffer.close()
-        image = base64.b64encode(image_png).decode()
-        img_src = f'data:image/png;base64,{image}'
-        
-        # Render the HTML page with the chart
-        return render(request, 'statistics.html', {'img_src': img_src})
+            # Initialize the figure and subplots
+            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 
-    # If not a POST request, render the form page
+            # Temperature plot based on chart type
+            if chart_type == 'line':
+                sns.lineplot(x=time, y=temp, ax=ax1, color='red')
+                sns.scatterplot(x=time, y=temp, ax=ax1)
+            elif chart_type == 'pi':
+                fig, (ax1, ax2) = plt.subplots(1, 2)  # New layout for pie chart
+                high_temp = sum(1 for t in temp if t > 98)
+                ok_temp = sum(1 for t in temp if t == 98)
+                low_temp = sum(1 for t in temp if t < 98)
+                ax1.pie([high_temp, ok_temp, low_temp], labels=['High', 'OK', 'Low'], colors=['red', 'green', 'yellow'],
+                        autopct='%1.1f%%')
+            elif chart_type == 'hist':
+                sns.histplot(data=temp, color='blue', bins=5, ax=ax1)
+            elif chart_type == 'box':
+                sns.boxplot(x=temp, palette='Set3', ax=ax1)
+
+            ax1.set_ylabel('Temperature (°C)')
+
+            # Pulse plot based on chart type
+            if chart_type == 'line':
+                sns.lineplot(x=time, y=pulse, ax=ax2, color='blue')
+                sns.scatterplot(x=time, y=pulse, ax=ax2, color='red')
+            elif chart_type == 'pi':
+                high_pulse = sum(1 for p in pulse if p > 72)
+                ok_pulse = sum(1 for p in pulse if p == 72)
+                low_pulse = sum(1 for p in pulse if p < 72)
+                ax2.pie([high_pulse, ok_pulse, low_pulse], labels=['High', 'OK', 'Low'],
+                        colors=['red', 'green', 'yellow'], autopct='%1.1f%%')
+            elif chart_type == 'hist':
+                sns.histplot(data=pulse, color='red', bins=5, ax=ax2)
+            elif chart_type == 'box':
+                sns.boxplot(x=pulse, palette='Set3', ax=ax2)
+
+            ax2.set_ylabel('Pulse (bpm)')
+            ax2.set_xlabel('Time')
+
+            fig.suptitle('Temperature and Pulse vs Time')
+
+            # Save the chart to a buffer
+            buffer = io.BytesIO()
+            plt.savefig(buffer, format='png')
+            buffer.seek(0)
+
+            # Convert the buffer to an image for rendering in HTML
+            image_png = buffer.getvalue()
+            buffer.close()
+            image = base64.b64encode(image_png).decode()
+            img_src = f'data:image/png;base64,{image}'
+
+            # Render the HTML page with the chart
+            return render(request, 'statistics.html', {'img_src': img_src})
+
     return render(request, 'statistics.html')
 @login_required
 def pdetails(request):
